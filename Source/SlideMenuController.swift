@@ -10,12 +10,12 @@ import UIKit
 public struct SlideMenuOptions {
     public static var leftViewWidth: CGFloat = 270.0
     public static var leftBezelWidth: CGFloat = 16.0
+    public static var leftPanFromBezel: Bool = true
     public static var contentViewScale: CGFloat = 0.96
     public static var contentViewOpacity: CGFloat = 0.5
     public static var shadowOpacity: CGFloat = 0.0
     public static var shadowRadius: CGFloat = 0.0
     public static var shadowOffset: CGSize = CGSizeMake(0,0)
-    public static var panFromBezel: Bool = true
     public static var animationDuration: CGFloat = 0.4
     public static var rightViewWidth: CGFloat = 270.0
     public static var rightBezelWidth: CGFloat = 16.0
@@ -858,7 +858,7 @@ public class SlideMenuController: UIViewController, UIGestureRecognizerDelegate 
     }
     
     private func slideLeftForGestureRecognizer( gesture: UIGestureRecognizer, point:CGPoint) -> Bool{
-        return isLeftOpen() || SlideMenuOptions.panFromBezel && isLeftPointContainedWithinBezelRect(point)
+        return isLeftOpen() || SlideMenuOptions.leftPanFromBezel && isLeftPointContainedWithinBezelRect(point)
     }
     
     private func isLeftPointContainedWithinBezelRect(point: CGPoint) -> Bool{
