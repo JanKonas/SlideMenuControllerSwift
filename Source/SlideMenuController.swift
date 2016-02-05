@@ -24,6 +24,7 @@ public struct SlideMenuOptions {
     public static var pointOfNoReturnWidth: CGFloat = 44.0
     public static var simultaneousGestureRecognizers: Bool = true
 	public static var opacityViewBackgroundColor: UIColor = UIColor.blackColor()
+    public static var minimalDirectionRatio: CGFloat? = 1.2 // TODO: determine right value
 }
 
 public class SlideMenuController: UIViewController, UIGestureRecognizerDelegate {
@@ -287,6 +288,7 @@ public class SlideMenuController: UIViewController, UIGestureRecognizerDelegate 
         static var startPointOfPan: CGPoint = CGPointZero
         static var wasOpenAtStartOfPan: Bool = false
         static var wasHiddenAtStartOfPan: Bool = false
+        static var handlingSuppressed: Bool = false
     }
     
     func handleLeftPanGesture(panGesture: UIPanGestureRecognizer) {
@@ -299,8 +301,18 @@ public class SlideMenuController: UIViewController, UIGestureRecognizerDelegate 
             return
         }
         
+        let velocity:CGPoint = panGesture.velocityInView(panGesture.view)
+        
         switch panGesture.state {
             case UIGestureRecognizerState.Began:
+                
+                if let minimalDirectionRatio = SlideMenuOptions.minimalDirectionRatio {
+                    let ratio = abs(velocity.x) / abs(velocity.y)
+                    if ratio < minimalDirectionRatio {
+                        LeftPanState.handlingSuppressed = true
+                        return
+                    }
+                }
                 
                 LeftPanState.frameAtStartOfPan = leftContainerView.frame
                 LeftPanState.startPointOfPan = panGesture.locationInView(view)
@@ -312,13 +324,21 @@ public class SlideMenuController: UIViewController, UIGestureRecognizerDelegate 
                 setOpenWindowLevel()
             case UIGestureRecognizerState.Changed:
                 
+                if LeftPanState.handlingSuppressed {
+                    return
+                }
+                
                 let translation: CGPoint = panGesture.translationInView(panGesture.view!)
                 leftContainerView.frame = applyLeftTranslation(translation, toFrame: LeftPanState.frameAtStartOfPan)
                 applyLeftOpacity()
                 applyLeftContentViewScale()
             case UIGestureRecognizerState.Ended:
                 
-                let velocity:CGPoint = panGesture.velocityInView(panGesture.view)
+                if LeftPanState.handlingSuppressed {
+                    LeftPanState.handlingSuppressed = false
+                    return
+                }
+                
                 let panInfo: PanInfo = panLeftResultInfoForVelocity(velocity)
                 
                 if panInfo.action == .Open {
@@ -349,6 +369,7 @@ public class SlideMenuController: UIViewController, UIGestureRecognizerDelegate 
         static var startPointOfPan: CGPoint = CGPointZero
         static var wasOpenAtStartOfPan: Bool = false
         static var wasHiddenAtStartOfPan: Bool = false
+        static var handlingSuppressed: Bool = false
     }
     
     func handleRightPanGesture(panGesture: UIPanGestureRecognizer) {
@@ -361,8 +382,18 @@ public class SlideMenuController: UIViewController, UIGestureRecognizerDelegate 
             return
         }
         
+        let velocity:CGPoint = panGesture.velocityInView(panGesture.view)
+        
         switch panGesture.state {
         case UIGestureRecognizerState.Began:
+            
+            if let minimalDirectionRatio = SlideMenuOptions.minimalDirectionRatio {
+                let ratio = abs(velocity.x) / abs(velocity.y)
+                if ratio < minimalDirectionRatio {
+                    LeftPanState.handlingSuppressed = true
+                    return
+                }
+            }
             
             RightPanState.frameAtStartOfPan = rightContainerView.frame
             RightPanState.startPointOfPan = panGesture.locationInView(view)
@@ -374,6 +405,10 @@ public class SlideMenuController: UIViewController, UIGestureRecognizerDelegate 
             setOpenWindowLevel()
         case UIGestureRecognizerState.Changed:
             
+            if LeftPanState.handlingSuppressed {
+                return
+            }
+            
             let translation: CGPoint = panGesture.translationInView(panGesture.view!)
             rightContainerView.frame = applyRightTranslation(translation, toFrame: RightPanState.frameAtStartOfPan)
             applyRightOpacity()
@@ -381,7 +416,11 @@ public class SlideMenuController: UIViewController, UIGestureRecognizerDelegate 
             
         case UIGestureRecognizerState.Ended:
             
-            let velocity: CGPoint = panGesture.velocityInView(panGesture.view)
+            if LeftPanState.handlingSuppressed {
+                LeftPanState.handlingSuppressed = false
+                return
+            }
+            
             let panInfo: PanInfo = panRightResultInfoForVelocity(velocity)
             
             if panInfo.action == .Open {
